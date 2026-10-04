@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech-to-Text Classroom Note Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
+</head>
+<body>
+
+    <!-- App Header -->
+    <header class="app-header">
+        <div class="brand-title">
+            <span class="brand-icon">🎓</span>
+            <div>
+                <h1>Classroom Note Generator</h1>
+                <span class="brand-subtitle">Real-time Speech Recognition & NLP Note Processor</span>
+            </div>
+        </div>
+        <div class="header-controls">
+            <label class="theme-switch" title="Toggle Dark Mode">
+                <input type="checkbox" id="themeToggle">
+                <span>🌙 Dark Mode</span>
+            </label>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="app-container">
+
+        <!-- Sidebar: Saved Notes -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Saved Notes</h2>
+                <span class="badge" id="notesCountBadge">0</span>
+            </div>
+
+            <button class="btn btn-secondary" id="btnNewNote" style="width: 100%;">
+                ➕ New Note
+            </button>
+
+            <div class="search-box">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search saved notes...">
+                <select id="filterSubject" class="select-input">
+                    <option value="all">All Subjects</option>
+                    <option value="Physics">Physics</option>
+                    <option value="History">History</option>
+                    <option value="Biology">Biology</option>
+                    <option value="Math">Math</option>
+                    <option value="General">General</option>
+                </select>
+            </div>
+
+            <div class="notes-list" id="notesList">
+                <!-- Dynamically populated note cards -->
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-workspace">
+
+            <!-- Unsupported Browser Banner -->
+            <div class="banner-warning" id="browserSupportBanner">
+                <span>⚠️ Your browser does not support speech recognition. Please open in <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong>, or use <strong>"Load Sample Note"</strong> to evaluate the app.</span>
+                <button class="btn btn-accent" id="btnSampleBanner" onclick="document.getElementById('btnSample').click()">🧪 Load Sample Note</button>
+            </div>
+
+            <!-- Speech Control Panel -->
+            <section class="control-panel">
+                <div class="recording-controls">
+                    <button class="btn btn-primary" id="btnStart">
+                        🎙️ Start Recording
+                    </button>
+                    <button class="btn btn-danger" id="btnStop" disabled>
+                        ⏹️ Stop Recording
+                    </button>
+                </div>
+
+                <div class="recording-status" id="recordingStatus">
+                    <span class="mic-pulse" id="micPulse"></span>
+                    <span id="statusText">Ready to listen</span>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="languageSelect" style="font-size: 0.85rem; color: var(--text-secondary);">Language:</label>
+                    <select id="languageSelect" class="select-input" style="width: auto;">
+                        <option value="en-US">English (US)</option>
+                        <option value="en-GB">English (UK)</option>
+                        <option value="es-ES">Spanish</option>
+                        <option value="fr-FR">French</option>
+                        <option value="de-DE">German</option>
+                        <option value="hi-IN">Hindi</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- Metrics Bar -->
+            <section class="metrics-grid">
+                <div class="metric-card">
+                    <span class="metric-label">Word Count</span>
+                    <span class="metric-value" id="wordCount">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Character Count</span>
+                    <span class="metric-value" id="charCount">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Duration</span>
+                    <span class="metric-value" id="durationTimer">00:00:00</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Est. Reading Time</span>
+                    <span class="metric-value" id="readingTime">0 min read</span>
+                </div>
+            </section>
+
+            <!-- Note Title & Subject -->
+            <section class="note-metadata-bar">
+                <input type="text" id="noteTitle" class="search-input input-title" placeholder="Classroom Note Title (e.g. Physics 101 - Lecture 4)...">
+                <select id="noteSubject" class="select-input" style="width: 180px;">
+                    <option value="General">Subject: General</option>
+                    <option value="Physics">Subject: Physics</option>
+                    <option value="History">Subject: History</option>
+                    <option value="Biology">Subject: Biology</option>
+                    <option value="Math">Subject: Math</option>
+                </select>
+            </section>
+
+            <!-- Live Unfinalized Speech Box -->
+            <div class="live-interim-box" id="liveInterim"></div>
+
+            <!-- Note Editor Box -->
+            <section class="editor-container">
+                <div class="editor-toolbar">
+                    <div class="toolbar-group">
+                        <button class="btn btn-secondary" id="btnClean" title="Clean text & format into readable paragraphs">
+                            ✨ Auto-Format NLP
+                        </button>
+                        <button class="btn btn-secondary" id="btnSample" title="Load realistic demonstration classroom note">
+                            🧪 Load Sample Note
+                        </button>
+                    </div>
+
+                    <div class="toolbar-group">
+                        <button class="btn btn-secondary" id="btnCopy" title="Copy notes to clipboard">
+                            📋 Copy Note
+                        </button>
+                        <button class="btn btn-secondary" id="btnDownload" title="Download note as TXT file">
+                            📄 Download TXT
+                        </button>
+                        <button class="btn btn-accent" id="btnSave" title="Save note to SQLite database">
+                            💾 Save Note
+                        </button>
+                        <button class="btn btn-secondary" id="btnClear" title="Clear note editor">
+                            🗑️ Clear
+                        </button>
+                    </div>
+                </div>
+
+                <textarea id="noteEditor" class="notebook-textarea" placeholder="Classroom transcription will appear here in real time... You can also edit, format, or type manually."></textarea>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Toast Notification Overlay -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/textProcessor.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/storage.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
